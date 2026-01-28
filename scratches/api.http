@@ -1,0 +1,33 @@
+###
+GET http://localhost:8083/api/v1/auth/info
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIyIiwicm9sZSI6IkFETUlOIiwiaXNzIjoicHJvc2VseXRlIiwiZXhwIjoxNzY5NjIwNzI5LCJpYXQiOjE3Njk2MTcxMjksImp0aSI6ImFlZTM4Y2YyLWViNmMtNGE1OC04ZDg2LWFhNTA0NjIwNTczNyIsInVzZXJuYW1lIjoia3V6eWEifQ.8TlanIxbcZWvtHdjPGD3LUSKLEN3cphLGqi43OnIcQw
+
+
+
+###
+POST http://localhost:8083/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "username": "kuzya",
+  "password": "kuzya"
+}
+
+###
+POST http://localhost:8083/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "username": "oleg1",
+  "password": "oleg1",
+  "first_name": "Oleg",
+  "last_name": "Popov"
+}
+
+###
+GET http://localhost:8083/api/v1/auth/info
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI0Iiwicm9sZSI6IlVTRVIiLCJpc3MiOiJwcm9zZWx5dGUiLCJleHAiOjE3Njk2MTg0OTcsImlhdCI6MTc2OTYxNDg5NywianRpIjoiM2ZlMzBhYTAtZGEwMC00MDUzLWIwNmUtMzJhYWMzNDdiZDJmIiwidXNlcm5hbWUiOiJhbnRvbiJ9.VXvCTlh2Ms-9WEbGBSBNhxX1N8iWveBd3FZVILVrSxI
+
+###
+GET http://localhost:8083/api/v1/auth/info
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiI1Iiwicm9sZSI6IlVTRVIiLCJpc3MiOiJwcm9zZWx5dGUiLCJleHAiOjE3Njk2MTkzNTMsImlhdCI6MTc2OTYxNTc1MywianRpIjoiNzZjNTY0NWYtNWZmOC00MGUyLWI5ZWMtZDgyY2FjNTVhYzc3IiwidXNlcm5hbWUiOiJvbGVnIn0.RXDvh7k0iGK1Pv4db9fMUOtFhZZj7LiAMnvC0GUQqEU
