@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>create-item</title>
+</head>
+<body>
+<form onsubmit="createItem(event)">
+    <textarea id="text" required></textarea>
+    <button>Создать</button>
+</form>
+<div>
+    <a href="dashboard.html">Перейти на Дашборд</a>
+</div>
+<script>
+    async function createItem(event) {
+        event.preventDefault();
+        const token = localStorage.getItem('jwt_token');
+
+        await fetch('http://localhost:8083/api/v1/items', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text: document.getElementById('text').value
+            })
+        });
+
+        alert('Запись создана!');
+        window.location.href = 'my-items.html';
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+</head>
+<body>
+<div id="dashboard">
+    <h2>Добро пожаловать, <span id="username"></span>!</h2>
+    <a href="create-item.html">Создать запись</a>
+    <a href="my-items.html">Мои записи</a>
+    <button onclick="logout()">Выйти</button>
+</div>
+
+<script>
+    // При загрузке проверяем токен
+    const token = localStorage.getItem('jwt_token');
+    if (!token) window.location.href = 'index.html';
+
+    // Загружаем данные пользователя
+    fetch('http://localhost:8083/api/v1/auth/info', {
+        headers: { 'Authorization': `Bearer ${token}` }
+    })
+        .then(r => r.json())
+        .then(user => {
+            document.getElementById('username').textContent = user.username;
+        });
+
+    // Функция выхода
+    function logout() {
+        localStorage.removeItem('jwt_token');
+        window.location.href = 'index.html';
+    }
+</script>
+</body>
+</html>

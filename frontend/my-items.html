@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мои записи</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #667eea;
+            color: white;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .actions {
+            white-space: nowrap;
+        }
+        .btn-edit, .btn-delete {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 3px;
+        }
+        .btn-edit {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .btn-delete {
+            background-color: #f44336;
+            color: white;
+        }
+        #edit-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        #edit-modal textarea {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
+            padding: 10px;
+        }
+        .modal-buttons {
+            text-align: right;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+<h2>📝 Мои записи</h2>
+
+<!-- Таблица записей -->
+<table id="items-table">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Текст</th>
+        <th>Создано</th>
+        <th>Обновлено</th>
+        <th>Действия</th>
+    </tr>
+    </thead>
+    <tbody id="items-table-body">
+    <!-- Данные загрузятся сюда -->
+    </tbody>
+</table>
+
+<div id="no-items" style="display: none; color: #666; margin: 20px 0;">
+    📭 У вас пока нет записей. Создайте первую!
+</div>
+
+<div style="margin-top: 20px;">
+    <button onclick="window.location.href='create-item.html'">➕ Создать запись</button>
+    <button onclick="window.location.href='dashboard.html'">📊 Дашборд</button>
+    <button onclick="location.reload()">🔄 Обновить</button>
+</div>
+
+<!-- Модальное окно редактирования -->
+<div id="overlay" class="overlay"></div>
+<div id="edit-modal">
+    <h3>✏️ Редактирование записи</h3>
+    <textarea id="edit-text"></textarea>
+    <div class="modal-buttons">
+        <button onclick="saveEdit()">💾 Сохранить</button>
+        <button onclick="closeEdit()">❌ Отмена</button>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('jwt_token');
+    if (!token) window.location.href = 'index.html';
+
+    let currentEditId = null;
+
+    // Загрузка записей
+    function loadItems() {
+        fetch('http://localhost:8083/api/v1/items', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(r => {
+                if (!r.ok) throw new Error('Ошибка загрузки');
+                return r.json();
+            })
+            .then(items => {
+                const tableBody = document.getElementById('items-table-body');
+                const noItems = document.getElementById('no-items');
+                const table = document.getElementById('items-table');
+
+                tableBody.innerHTML = '';
+
+                if (!items || items.length === 0) {
+                    table.style.display = 'none';
+                    noItems.style.display = 'block';
+                    return;
+                }
+
+                table.style.display = 'table';
+                noItems.style.display = 'none';
+
+                items.forEach(item => {
+                    const row = tableBody.insertRow();
+
+                    // ID
+                    row.insertCell().textContent = item.id;
+
+                    // Текст
+                    const textCell = row.insertCell();
+                    textCell.textContent = item.text.length > 100
+                        ? item.text.substring(0, 100) + '...'
+                        : item.text;
+                    textCell.title = item.text;
+
+                    // Дата создания
+                    row.insertCell().textContent = formatDate(item.createdAt);
+
+                    // Дата обновления
+                    row.insertCell().textContent = formatDate(item.updatedAt);
+
+                    // Действия
+                    const actionsCell = row.insertCell();
+                    actionsCell.className = 'actions';
+                    actionsCell.innerHTML = `
+                    <button class="btn-edit" onclick="openEdit(${item.id}, '${escapeText(item.text)}')">✏️ Редактировать</button>
+                    <button class="btn-delete" onclick="deleteItem(${item.id})">🗑️ Удалить</button>
+                `;
+                });
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Не удалось загрузить записи');
+            });
+    }
+
+    // Открыть редактирование
+    function openEdit(id, text) {
+        currentEditId = id;
+        document.getElementById('edit-text').value = text;
+        document.getElementById('edit-modal').style.display = 'block';
+        document.getElementById('overlay').style.display = 'block';
+    }
+
+    // Закрыть редактирование
+    function closeEdit() {
+        document.getElementById('edit-modal').style.display = 'none';
+        document.getElementById('overlay').style.display = 'none';
+        currentEditId = null;
+    }
+
+    // Сохранить изменения
+    function saveEdit() {
+        const newText = document.getElementById('edit-text').value.trim();
+        if (!newText) {
+            alert('Текст не может быть пустым');
+            return;
+        }
+
+        fetch(`http://localhost:8083/api/v1/items/${currentEditId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ text: newText })
+        })
+            .then(r => {
+                if (r.ok) {
+                    closeEdit();
+                    alert('✅ Запись обновлена');
+                    loadItems(); // Перезагрузить список
+                } else {
+                    alert('❌ Ошибка обновления');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Ошибка соединения');
+            });
+    }
+
+    // Удалить запись
+    function deleteItem(id) {
+        if (!confirm('Удалить запись?')) return;
+
+        fetch(`http://localhost:8083/api/v1/items/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        })
+            .then(r => {
+                if (r.ok) {
+                    alert('✅ Запись удалена');
+                    loadItems(); // Перезагрузить список
+                } else {
+                    alert('❌ Ошибка удаления');
+                }
+            })
+            .catch(error => {
+                console.error('Ошибка:', error);
+                alert('Ошибка соединения');
+            });
+    }
+
+    // Вспомогательные функции
+    function formatDate(dateString) {
+        if (!dateString) return '—';
+        const date = new Date(dateString);
+        return date.toLocaleString('ru-RU');
+    }
+
+    function escapeText(text) {
+        return text.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    }
+
+    // Загрузить записи при открытии страницы
+    loadItems();
+</script>
+</body>
+</html>
