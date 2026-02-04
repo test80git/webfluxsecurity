@@ -1,7 +1,8 @@
 plugins {
-	id 'java'
-	id 'org.springframework.boot' version "$springBootVersion"
-	id 'io.spring.dependency-management' version "$springDependencyManagementVersion"
+    id 'java'
+    id 'org.springframework.boot' version "$springBootVersion"
+    id 'io.spring.dependency-management' version "$springDependencyManagementVersion"
+    id("org.openapi.generator") version "7.4.0"
 }
 
 group = 'net.proselyte'
@@ -9,37 +10,118 @@ version = '1.0.0'
 sourceCompatibility = '17'
 
 repositories {
-	mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.session:spring-session-core'
-	implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.session:spring-session-core'
+    implementation 'org.springframework.boot:spring-boot-starter-data-r2dbc'
 
-	implementation "io.r2dbc:r2dbc-postgresql:$r2dbcVersion"
-	implementation "org.postgresql:postgresql:$postgreSqlVersion"
+    implementation "io.r2dbc:r2dbc-postgresql:$r2dbcVersion"
+    implementation "org.postgresql:postgresql:$postgreSqlVersion"
 
-	implementation "org.flywaydb:flyway-core:$flywayDbVersion"
-	implementation "com.google.code.findbugs:jsr305:$googleFindBugsVersion"
+    implementation "org.flywaydb:flyway-core:$flywayDbVersion"
+    implementation "com.google.code.findbugs:jsr305:$googleFindBugsVersion"
 
-	implementation "org.mapstruct:mapstruct:$mapStructVersion"
+    implementation "org.mapstruct:mapstruct:$mapStructVersion"
 
-	implementation "io.jsonwebtoken:jjwt:$jsonWebTokenVersion"
-	implementation "javax.xml.bind:jaxb-api:$jaxbApiVersion"
-	implementation 'org.projectlombok:lombok:1.18.18'
+    implementation "io.jsonwebtoken:jjwt:$jsonWebTokenVersion"
+    implementation "javax.xml.bind:jaxb-api:$jaxbApiVersion"
+    implementation 'org.projectlombok:lombok:1.18.18'
 
-	compileOnly('org.projectlombok:lombok')
-	annotationProcessor "org.projectlombok:lombok"
-	annotationProcessor "org.mapstruct:mapstruct-processor:$mapStructVersion"
+    // OpenAPI (Swagger) аннотации
+    implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.3.0'
+
+    // Jakarta Validation API (для @Valid, @NotNull и т.д.)
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+
+    // Jakarta Servlet API (для HttpServletResponse)
+    implementation 'jakarta.servlet:jakarta.servlet-api:6.0.0'
+
+    // Для поддержки MultipartFile
+    implementation 'org.springframework:spring-webflux:6.1.2'
+
+    // Если нужен OpenAPI генератор в runtime
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.19'
+
+    compileOnly('org.projectlombok:lombok')
+    annotationProcessor "org.projectlombok:lombok"
+    annotationProcessor "org.mapstruct:mapstruct-processor:$mapStructVersion"
 
 
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'io.projectreactor:reactor-test'
-	testImplementation 'org.mockito:mockito-core:5.21.0'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
+    testImplementation 'org.mockito:mockito-core:5.21.0'
 }
 
 tasks.named('test') {
-	useJUnitPlatform()
+    useJUnitPlatform()
 }
+
+sourceSets {
+    main {
+        java {
+            // Добавляем сгенерированный код в исходники
+            srcDir("$buildDir/generated/src/main/java")
+        }
+    }
+}
+
+
+openApiGenerate{
+
+    generatorName.set("spring")
+    inputSpec.set("$projectDir/specs/item-api.yaml")
+    outputDir.set("$buildDir/generated")
+
+    configOptions = [
+            "dateLibrary": "java8",
+            "interfaceOnly": "true",
+            "useSpringBoot3": "true",
+            "reactive": "true",   /*Ключевое для WebFlux!*/
+            "useTags": "true",
+            "apiPackage": "net.proselyte.webfluxsecurity.api",
+            "modelPackage": "net.proselyte.webfluxsecurity.dto",
+            "serializableModel": "true",
+            "useBeanValidation": "true",
+            "openApiNullable": "false",
+            "skipDefaultInterface": "false",
+            "delegatePattern": "true",
+            "useResponseEntity": "true",   /*Для ResponseEntity*/
+            "useSpringController": "true",          /*Использовать @Controller*/
+            "returnResponse": "false",              /* Возвращать ResponseEntity*/
+            "library": "spring-boot",               /*Spring Boot стиль */
+            "generateApiTests": "false",
+            "generateModelTests": "false",
+            "generateApiDocumentation": "false",
+            "wrapInResponseEntity": "false"  // Не оборачивать в ResponseEntity
+
+    ]
+
+//    Маппинг типов для реактивных классов
+    importMappings = [
+            "Mono": "reactor.core.publisher.Mono",
+            "Flux": "reactor.core.publisher.Flux",
+            "LocalDateTime": "java.time.LocalDateTime"
+    ]
+
+    typeMappings = [
+//            "array": "Flux",
+            "List": "Flux" ,
+            "date-time": "java.time.LocalDateTime",
+            "OffsetDateTime": "java.time.LocalDateTime"
+    ]
+//    # Для реактивных типов
+    languageSpecificPrimitives = [
+            "Mono", "Flux", "LocalDateTime", "LocalDate"
+    ]
+
+    // Отключаем валидацию, если нужно
+    validateSpec.set(false)
+
+}
+
+// Зависимость от генерации
+compileJava.dependsOn tasks.openApiGenerate

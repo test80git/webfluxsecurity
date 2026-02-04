@@ -1,0 +1,232 @@
+openapi: 3.0.3
+info:
+  title: Items Management API
+  description: API для управления записями пользователей
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8083/api/v2
+    description: Local development server
+
+paths:
+  /items:
+    post:
+      tags:
+        - items
+      summary: Создать новую запись
+      description: Создание записи для текущего пользователя
+      operationId: createItem
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemRequest'
+      responses:
+        '201':
+          description: Запись успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+        '400':
+          description: Неверные входные данные
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+#      x-codegen-responseBodyType: ResponseEntity<ItemResponse>  # Для Mono<ResponseEntity<ItemResponse>>
+#      x-codegen-httpMethod: POST
+
+#  Генераторы OpenAPI плохо работают с реактивными типами в Spring WebFlux. Часто проще создать интерфейс вручную.
+#    get:
+#      tags:
+#        - items
+#      summary: Получить все записи пользователя
+#      description: Возвращает все записи текущего пользователя
+#      operationId: getMyItems
+#      security:
+#        - bearerAuth: []
+#      x-swagger-router-controller: items
+#      x-responseWrapper: Flux<ItemResponse>
+#      responses:
+#        '200':
+#          description: Список записей
+#          content:
+#            application/json:
+#              schema:
+#                $ref: '#/components/schemas/ItemResponse'
+#        '401':
+#          $ref: '#/components/responses/UnauthorizedError'
+
+
+  /items/{id}:
+    put:
+      tags:
+        - items
+      summary: Обновить запись
+      description: Обновляет текст записи по ID
+      operationId: updateItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID записи
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateItemRequest'
+      responses:
+        '200':
+          description: Запись успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ItemResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      x-codegen-responseBodyType: Mono<ItemResponse>  # Для Mono<ItemResponse>
+      x-codegen-httpMethod: PUT
+
+    delete:
+      tags:
+        - items
+      summary: Удалить запись
+      description: Удаляет запись по ID
+      operationId: deleteItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: ID записи
+      responses:
+        '204':
+          description: Запись успешно удалена
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+      x-codegen-httpMethod: DELETE
+
+components:
+  schemas:
+    ItemRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: Текст записи
+          example: "Моя первая запись"
+          minLength: 1
+          maxLength: 2048
+      x-className: ItemRequest
+
+    UpdateItemRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: Новый текст записи
+          example: "Обновленный текст записи"
+          minLength: 1
+          maxLength: 2048
+      x-className: ItemRequest  # Можно использовать тот же класс
+
+    ItemResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор записи
+          example: 123
+        userId:
+          type: integer
+          format: int64
+          description: ID пользователя-владельца
+          example: 1
+        text:
+          type: string
+          description: Текст записи
+          example: "Содержимое записи"
+        createdAt:
+          type: string
+          format: date-time
+          description: Дата и время создания
+          example: "2024-01-15T14:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Дата и время последнего обновления
+          example: "2024-01-15T15:45:00Z"
+      x-className: ItemResponse
+
+    ErrorResponse:
+      type: object
+      description: Ошибка
+      properties:
+        error:
+          type: string
+          example: "Error message"
+        code:
+          type: string
+          example: "ERROR_CODE"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2024-01-15T14:30:00Z"
+
+  responses:
+    UnauthorizedError:
+      description: Пользователь не авторизован
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ForbiddenError:
+      description: Нет доступа
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFoundError:
+      description: Запись не найдена
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT токен аутентификации
+
+tags:
+  - name: items
+    description: Операции с записями пользователей

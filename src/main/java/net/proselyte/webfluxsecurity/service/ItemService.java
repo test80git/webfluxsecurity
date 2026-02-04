@@ -2,6 +2,7 @@ package net.proselyte.webfluxsecurity.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.proselyte.webfluxsecurity.dto.ItemRequest;
 import net.proselyte.webfluxsecurity.entity.ItemEntity;
 import net.proselyte.webfluxsecurity.repository.ItemRepository;
 import org.springframework.stereotype.Service;
@@ -14,13 +15,18 @@ import reactor.core.publisher.Mono;
 public class ItemService {
     private final ItemRepository itemRepository;
 
-    public Mono<ItemEntity> save(ItemEntity item) {
-        log.info("save item: {}", item);
+    public Mono<ItemEntity> save(ItemRequest itemRequest, Long userId) {
+        ItemEntity item = ItemEntity.builder()
+                .userId(userId)
+                .text(itemRequest.getText())
+                .build();
         return itemRepository.save(item);
     }
 
     public Flux<ItemEntity> findByUserId(Long userId) {
-        return itemRepository.findByUserId(userId);
+        return itemRepository.findByUserId(userId).doOnNext(itemEntity -> {
+            log.info("find item by id: {}", itemEntity);
+        });
     }
 
     public Mono<ItemEntity> update(Long id, String newText, Long userId) {

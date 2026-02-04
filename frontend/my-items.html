@@ -155,10 +155,11 @@
                         ? item.text.substring(0, 100) + '...'
                         : item.text;
                     textCell.title = item.text;
-
+                    console.log('Item: ', item.userId)
+                    console.log('Created')
                     // Дата создания
                     row.insertCell().textContent = formatDate(item.createdAt);
-
+                    console.log('Updated')
                     // Дата обновления
                     row.insertCell().textContent = formatDate(item.updatedAt);
 
@@ -227,7 +228,7 @@
     function deleteItem(id) {
         if (!confirm('Удалить запись?')) return;
 
-        fetch(`http://localhost:8083/api/v1/items/${id}`, {
+        fetch(`http://localhost:8083/api/v2/items/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         })
@@ -248,6 +249,7 @@
     // Вспомогательные функции
     function formatDate(dateString) {
         if (!dateString) return '—';
+        console.log('Дата от сервера:', dateString, 'Тип:', typeof dateString);
         const date = new Date(dateString);
         return date.toLocaleString('ru-RU');
     }

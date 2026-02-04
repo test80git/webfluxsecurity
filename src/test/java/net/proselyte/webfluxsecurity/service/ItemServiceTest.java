@@ -1,5 +1,7 @@
 package net.proselyte.webfluxsecurity.service;
 
+
+import net.proselyte.webfluxsecurity.dto.ItemRequest;
 import net.proselyte.webfluxsecurity.entity.ItemEntity;
 import net.proselyte.webfluxsecurity.repository.ItemRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,31 +30,76 @@ class ItemServiceTest {
     private ItemService itemService;
     private ItemEntity existingItem;
     private ItemEntity updatedItem;
+    private ItemRequest itemRequest;
 
     @BeforeEach
     void setUp() {
         itemService = new ItemService(mockItemRepository);
         existingItem = ItemEntity.builder()
-                .id(1L).userId(1L).text("Original Text")
-                .createdAt(LocalDateTime.now())
-                .updatedAt(LocalDateTime.now())
+                .id(1L)
+                .userId(1L)
+                .text("Original Text")
+//                .createdAt(LocalDateTime.now())
+//                .updatedAt(LocalDateTime.now())
                 .build();
+
         updatedItem = ItemEntity.builder()
-                .id(1L).userId(1L).text("Updated Text")
+                .id(1L)
+                .userId(1L)
+                .text("Updated Text")
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
+
+        itemRequest = new ItemRequest();
+        itemRequest.setText("Text Request");
     }
 
     @Test
     void saveWithMock() {
 
-        itemService.save(existingItem);
-        verify(mockItemRepository).save(existingItem);
-        verify(mockItemRepository, times(1)).save(existingItem);
+        itemService.save(itemRequest, 1L);
+        existingItem.setText(itemRequest.getText());
+
+        verify(mockItemRepository).save(argThat(item ->
+                item.getText().equals("Text Request") &&
+                item.getUserId().equals(1L) &&
+                item.getId() == null  // ← Вот это важно!
+        ));
+        verify(mockItemRepository, times(1)).save(argThat(item ->
+                item.getText().equals("Text Request") &&
+                item.getUserId().equals(1L) &&
+                item.getId() == null  // ID должен быть null при сохранении
+        ));
         verifyNoMoreInteractions(mockItemRepository);
     }
 
+    @Test
+    void save_shouldSaveItemWithCorrectFields() {
+        // Arrange (Stub)
+        when(mockItemRepository.save(any(ItemEntity.class)))
+                .thenReturn(Mono.just(existingItem));
+
+        // Act
+        Mono<ItemEntity> result = itemService.save(itemRequest, 1L);
+
+        // Assert (StepVerifier)
+        StepVerifier.create(result)
+                .expectNextMatches(item ->
+                        item.getId().equals(1L) &&
+                        item.getText().equals("Original Text") &&
+                        item.getUserId().equals(1L)
+                )
+                .verifyComplete();
+
+        // Verify
+        verify(mockItemRepository).save(argThat(item ->
+                item.getText().equals("Text Request") &&
+                item.getUserId().equals(1L) &&
+                item.getId() == null
+        ));
+        verifyNoMoreInteractions(mockItemRepository);
+    }
     @Test
     void findByUserIdWithMock() {
         itemService.findByUserId(2L);

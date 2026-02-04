@@ -1,6 +1,7 @@
 package net.proselyte.webfluxsecurity.rest;
 
 import lombok.RequiredArgsConstructor;
+import net.proselyte.webfluxsecurity.dto.ItemRequest;
 import net.proselyte.webfluxsecurity.entity.ItemEntity;
 import net.proselyte.webfluxsecurity.security.CustomPrincipal;
 import net.proselyte.webfluxsecurity.service.ItemService;
@@ -31,15 +32,15 @@ public class ItemController {
     private final ItemService itemService;
 
     @PostMapping
-    public Mono<ItemEntity> createItem(@RequestBody ItemEntity itemEntity,
+    public Mono<ItemEntity> createItem(@RequestBody ItemRequest itemRequest,
                                        Authentication auth) {
         CustomPrincipal principal = (CustomPrincipal) auth.getPrincipal();
-        log.info("Creating new item: {}", itemEntity);
+        log.info("Creating new item: {}", itemRequest);
         log.info("Principal name: {}, {}", principal.getName(), principal.getId());
         // principal.getId() - ID пользователя из токена
-        itemEntity.setUserId(principal.getId());
 
-        return itemService.save(itemEntity);
+
+        return itemService.save(itemRequest, principal.getId());
     }
 
     @GetMapping

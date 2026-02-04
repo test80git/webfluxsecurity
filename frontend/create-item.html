@@ -17,7 +17,7 @@
         event.preventDefault();
         const token = localStorage.getItem('jwt_token');
 
-        await fetch('http://localhost:8083/api/v1/items', {
+        await fetch('http://localhost:8083/api/v2/items', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
