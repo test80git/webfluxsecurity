@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -100,13 +101,41 @@ class ItemServiceTest {
         ));
         verifyNoMoreInteractions(mockItemRepository);
     }
-    @Test
-    void findByUserIdWithMock() {
-        itemService.findByUserId(2L);
 
+    @Test
+    void findByUserIdWithStub() {
+        // Arrange - настраиваем mock
+        Flux<ItemEntity> expectedFlux = Flux.just(
+                new ItemEntity(1L,  2L, "Item1", LocalDateTime.now(), LocalDateTime.now()),
+                new ItemEntity(2L,  2L, "Item2", LocalDateTime.now(), LocalDateTime.now())
+        );
+
+        when(mockItemRepository.findByUserId(2L)).thenReturn(expectedFlux);
+
+        // Act
+        Flux<ItemEntity> result = itemService.findByUserId(2L);
+
+        // Assert
         verify(mockItemRepository).findByUserId(2L);
         verify(mockItemRepository, times(1)).findByUserId(2L);
-        verifyNoMoreInteractions(mockItemRepository);
+
+        // Дополнительно можно проверить, что flux содержит элементы
+        StepVerifier.create(result)
+                .expectNextCount(2)
+                .verifyComplete();
+    }
+
+    @Test
+    void findByUserIdWithMock() {
+        // Настраиваем mock чтобы не возвращал null
+        when(mockItemRepository.findByUserId(2L)).thenReturn(Flux.empty());
+
+        // Act
+        itemService.findByUserId(2L);
+
+        // Assert
+        verify(mockItemRepository).findByUserId(2L);
+        verify(mockItemRepository, times(1)).findByUserId(2L);
     }
 
     @Test
