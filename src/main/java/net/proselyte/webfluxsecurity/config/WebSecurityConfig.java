@@ -42,6 +42,14 @@ public class WebSecurityConfig {
                 .authorizeExchange()
                 .pathMatchers(HttpMethod.OPTIONS).permitAll()
                 .pathMatchers(publicRoutes).permitAll()
+                .pathMatchers(
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/api-docs/**",
+                        "/webjars/**",
+                        "/swagger-resources/**"
+                ).permitAll()  // ← Разрешить доступ к Swagger без авторизации
                 .anyExchange().authenticated()
                 .and()
                 .exceptionHandling()
