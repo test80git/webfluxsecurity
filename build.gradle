@@ -65,6 +65,19 @@ tasks.named('test') {
     useJUnitPlatform()
 }
 
+def apiTest = tasks.register("apiTests", Test) {
+    useJUnitPlatform {
+        includeTags "API"
+    }
+}
+
+def uiTest = tasks.register("uiTests", Test) {
+    useJUnitPlatform {
+        includeTags "UI"
+    }
+}
+
+
 sourceSets {
     main {
         java {
