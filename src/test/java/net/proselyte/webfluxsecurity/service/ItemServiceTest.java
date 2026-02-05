@@ -1,10 +1,16 @@
 package net.proselyte.webfluxsecurity.service;
 
 
+import io.qameta.allure.Description;
+import io.qameta.allure.Epic;
+import io.qameta.allure.Feature;
+import io.qameta.allure.Story;
 import net.proselyte.webfluxsecurity.dto.ItemRequest;
 import net.proselyte.webfluxsecurity.entity.ItemEntity;
 import net.proselyte.webfluxsecurity.repository.ItemRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -24,6 +30,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@Epic("Item Management")
+@Feature("Item Service")
 class ItemServiceTest {
 
     @Mock
@@ -57,6 +65,10 @@ class ItemServiceTest {
     }
 
     @Test
+    @Tag("API")  
+    @DisplayName("Save item with mock verification")
+    @Description("Test saving item with mock verification")
+    @Story("Save item functionality")
     void saveWithMock() {
 
         itemService.save(itemRequest, 1L);
@@ -65,7 +77,7 @@ class ItemServiceTest {
         verify(mockItemRepository).save(argThat(item ->
                 item.getText().equals("Text Request") &&
                 item.getUserId().equals(1L) &&
-                item.getId() == null  // ← Вот это важно!
+                item.getId() == null
         ));
         verify(mockItemRepository, times(1)).save(argThat(item ->
                 item.getText().equals("Text Request") &&
@@ -76,6 +88,10 @@ class ItemServiceTest {
     }
 
     @Test
+    @Tag("API")  
+    @DisplayName("Save item with correct fields")
+    @Description("Test that item is saved with correct fields")
+    @Story("Save item functionality")
     void save_shouldSaveItemWithCorrectFields() {
         // Arrange (Stub)
         when(mockItemRepository.save(any(ItemEntity.class)))
@@ -103,6 +119,10 @@ class ItemServiceTest {
     }
 
     @Test
+    @Tag("API")  
+    @DisplayName("Find items by user ID with stub")
+    @Description("Test finding items by user ID using stub")
+    @Story("Find items by user")
     void findByUserIdWithStub() {
         // Arrange - настраиваем mock
         Flux<ItemEntity> expectedFlux = Flux.just(
@@ -126,6 +146,10 @@ class ItemServiceTest {
     }
 
     @Test
+    @Tag("API")  
+    @DisplayName("Find items by user ID with mock")
+    @Description("Test finding items by user ID using mock")
+    @Story("Find items by user")
     void findByUserIdWithMock() {
         // Настраиваем mock чтобы не возвращал null
         when(mockItemRepository.findByUserId(2L)).thenReturn(Flux.empty());
@@ -139,6 +163,7 @@ class ItemServiceTest {
     }
 
     @Test
+    @Tag("API")  
     void update_shouldUpdateItem_whenItemExistsAndUserIsOwner() {
         // Arrange (Stub - задаём поведение мока)
         when(mockItemRepository.findById(1L))
@@ -169,6 +194,7 @@ class ItemServiceTest {
     }
 
     @Test
+    @Tag("API")  
     void update_shouldReturnError_whenItemNotFound() {
         // Arrange
         when(mockItemRepository.findById(1L))
@@ -192,11 +218,12 @@ class ItemServiceTest {
     }
 
     @Test
+    @Tag("API")
     void update_shouldReturnError_whenUserIsNotOwner() {
         // Arrange
         ItemEntity otherUserItem = ItemEntity.builder()
                 .id(1L)
-                .userId(999L) // Другой пользователь
+                .userId(999L)
                 .text("Original Text")
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
@@ -223,6 +250,7 @@ class ItemServiceTest {
     }
 
     @Test
+    @Tag("API")
     void update_shouldSaveWithUpdatedText() {
         // Arrange
         when(mockItemRepository.findById(1L))
@@ -246,6 +274,7 @@ class ItemServiceTest {
     }
 
     @Test
+    @Tag("API")
     void delete() {
     }
 }

@@ -1,16 +1,14 @@
-// Параметры и глобальные переменные
-task_branch = "${TEST_BRANCH_NAME}" // Получаем название ветки из параметра
+// Параметры
+task_branch = "${TEST_BRANCH_NAME}"
 def branch_cutted = task_branch.contains("origin") ? task_branch.split('/')[1] : task_branch.trim()
 currentBuild.displayName = "$branch_cutted"
 base_git_url = "https://github.com/test80git/webfluxsecurity.git"
 
 node {
     withEnv(["branch=${branch_cutted}", "base_url=${base_git_url}"]) {
-        stage("Checkout Branch") {
-            // Очистка workspace перед сборкой
-            cleanWs()
 
-            // Проверяем и получаем нужную ветку
+        stage("Checkout Branch") {
+            cleanWs()
             checkout scm: [
                     $class           : 'GitSCM',
                     branches         : [[name: "*/${branch_cutted}"]],
@@ -18,29 +16,17 @@ node {
             ]
         }
 
-        // Выполнение тестов параллельно
         try {
             parallel getTestStages(["apiTests", "uiTests"])
         } finally {
-            stage ("Allure") {
+            stage("Allure Report") {
                 generateAllure()
             }
-        }
-        stage("Debug") {
-            sh '''
-        echo "Текущая директория:"
-        pwd
-        echo "Содержимое build/:"
-        ls -la build/ || echo "Нет build/"
-        echo "Поиск allure-results:"
-        find . -name "allure-results" -type d 2>/dev/null
-    '''
         }
     }
 }
 
 // Вспомогательные методы
-
 def getTestStages(testTags) {
     def stages = [:]
     testTags.each { tag ->
@@ -53,9 +39,13 @@ def getTestStages(testTags) {
 
 def runTestWithTag(String tag) {
     try {
-        labelledShell(label: "Run ${tag}", script: "chmod +x gradlew \n./gradlew -x test ${tag}")
-    } finally {
-        echo "Some failed tests detected"
+        sh """
+            chmod +x gradlew
+            ./gradlew clean ${tag}
+        """
+    } catch (err) {
+        echo "Тесты завершились с ошибками: ${err}"
+        currentBuild.result = 'UNSTABLE'
     }
 }
 
@@ -65,6 +55,6 @@ def generateAllure() {
             jdk              : '',
             properties       : [],
             reportBuildPolicy: 'ALWAYS',
-            results          : [[path: 'build/reports/allure-results']]
+            results          : [[path: 'build/allure-results']]
     ])
 }
