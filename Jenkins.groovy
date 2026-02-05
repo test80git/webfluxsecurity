@@ -19,6 +19,10 @@ node {
         try {
             parallel getTestStages(["apiTests", "uiTests"])
         } finally {
+            stage("Reports BlueOcean"){
+                // Собираем JUnit отчеты для Blue Ocean
+                junit 'build/test-results/**/*.xml'
+            }
             stage("Allure Report") {
                 generateAllure()
             }
